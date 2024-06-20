@@ -4,16 +4,18 @@ import {
 	DiscountService,
 	Discount,
 } from "../../services/discount.service";
-import { AlertService, CoreService } from "wacom";
+import { AlertService, CoreService, StoreService as _StoreService } from "wacom";
 import { TranslateService } from "src/app/modules/translate/translate.service";
 import { FormInterface } from "src/app/modules/form/interfaces/form.interface";
+import { StoreService, Store } from "src/app/modules/store/services/store.service";
+import { Router } from "@angular/router";
 
 @Component({
 	templateUrl: "./discounts.component.html",
 	styleUrls: ["./discounts.component.scss"],
 })
 export class DiscountsComponent {
-	columns = ["name", "description"];
+	columns = ["name", "code", "amount"];
 
 	form: FormInterface = this._form.getForm("discounts", {
 		formId: "discounts",
@@ -26,28 +28,50 @@ export class DiscountsComponent {
 				fields: [
 					{
 						name: "Placeholder",
-						value: "fill discounts title",
+						value: "fill discounts title"
 					},
 					{
 						name: "Label",
-						value: "Title",
+						value: "Title"
 					},
 				],
 			},
 			{
-				name: "Text",
-				key: "description",
+				name: "Number",
+				key: "amount",
 				fields: [
 					{
 						name: "Placeholder",
-						value: "fill discounts description",
+						value: "fill discounts amount"
 					},
 					{
 						name: "Label",
-						value: "Description",
+						value: "amount"
 					},
 				],
 			},
+			{
+				name: 'Select',
+				key: 'stores',
+				fields: [
+					{
+						name: 'Placeholder',
+						value: 'fill your stores'
+					},
+					{
+						name: 'Label',
+						value: 'Stores'
+					},
+					{
+						name: 'Multiple',
+						value: true
+					},
+					{
+						name: 'Items',
+						value: this.stores
+					}
+				]
+			}
 		],
 	});
 
@@ -56,7 +80,9 @@ export class DiscountsComponent {
 			this._form.modal<Discount>(this.form, {
 				label: "Create",
 				click: (created: unknown, close: () => void) => {
-					this._sd.create(created as Discount);
+					this._sd.create(created as Discount,
+						this.setDiscounts.bind(this)
+					);
 					close();
 				},
 			});
@@ -87,17 +113,55 @@ export class DiscountsComponent {
 				],
 			});
 		},
+		buttons:
+			[
+				{
+					icon: 'cloud_download',
+					click: (doc: Discount) => {
+						this._form.modalUnique<Discount>(
+							'discount',
+							'code',
+							doc
+						);
+					}
+				}
+			],
 	};
 
-	get rows(): Discount[] {
-		return this._sd.discounts;
+	get stores(): Store[] {
+		return this._ss.stores;
+	}
+	
+	store: string;
+	setStore(store: string) {
+		this.store = store;
+		this._store.set('store', store);
+		this.setDiscounts();
+	}
+
+	discounts: Discount[] = [];
+	setDiscounts() {
+		this.discounts.splice(0, this.discounts.length);
+		for (const discount of this._sd.discounts) {
+			discount.stores = discount.stores || [];
+			if (this.store) {
+				if (discount.stores.includes(this.store)) {
+					this.discounts.push(discount);
+				}
+			} else {
+				this.discounts.push(discount);
+			}
+		}
 	}
 
 	constructor(
-		private _sd: DiscountService,
+		public _sd: DiscountService,
 		private _translate: TranslateService,
 		private _alert: AlertService,
 		private _form: FormService,
-		private _core: CoreService
+		private _core: CoreService,
+		private _ss: StoreService,
+		private _store: _StoreService,
+		private _router: Router
 	) { }
 }

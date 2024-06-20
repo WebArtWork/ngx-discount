@@ -4,7 +4,9 @@ import { MongoService, AlertService } from 'wacom';
 export interface Discount {
 	_id: string;
 	name: string;
-	description: string;
+	stores: string[];
+	code: string;
+	amount: number;
 }
 
 @Injectable({
@@ -19,7 +21,9 @@ export class DiscountService {
 		return {
 			_id: '',
 			name: '',
-			description: ''
+			stores: [],
+			code: '',
+			amount: 0
 		}
 	}
 
